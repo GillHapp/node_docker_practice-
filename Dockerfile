@@ -1,15 +1,36 @@
-# Step 1: Use Node official image
-FROM node:20-alpine3.18
+# ===================
+# Build Stage
+# ===================
+FROM node:20-alpine3.18 AS builder
 
-# Step 2: Set working directory inside container
+# Set working directory
 WORKDIR /app
 
-# Step 3: Copy package.json and install dependencies
+# Copy only package.json and package-lock.json (if exists) first
 COPY package.json ./
+
+# Install dependencies
 RUN npm install
 
-# Step 4: Copy all project files
+# Copy the rest of the application code
 COPY . .
 
-# Step 5: Define the command to run
+# ===================
+# Production Stage
+# ===================
+FROM node:20-alpine3.18
+
+# Set working directory
+WORKDIR /app
+
+# Copy only needed files from builder stage
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/index.js ./index.js
+COPY --from=builder /app/package.json ./package.json
+
+
+# Expose the port your app runs on
+EXPOSE 3000
+
+# Define the command to run your app
 CMD ["npm", "start"]
